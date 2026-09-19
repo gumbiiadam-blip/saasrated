@@ -18,12 +18,19 @@ export function createApp() {
   app.disable('x-powered-by');
   app.use(express.json());
   app.use(tierMiddleware);
+  app.use('/api', async (req, res, next) => {
+    res.setHeader('Cache-Control', 'no-store');
+    // Wake the poller for whoever is asking; a first hit after idle refreshes before answering.
+    try { await market.ensureFresh(req.tier); } catch { /* served from whatever we have */ }
+    next();
+  });
   app.use(express.static(path.join(config.root, 'public'), { extensions: ['html'] }));
 
   const refreshFor = (tier) => (tier === 'premium' ? config.premiumRefreshSeconds : config.freeRefreshSeconds);
 
   app.get('/api/me', (req, res) => {
     res.json({
+      app: { name: config.appName, tagline: config.appTagline, url: config.appUrl },
       tier: req.tier,
       refreshSeconds: refreshFor(req.tier),
       freeRefreshSeconds: config.freeRefreshSeconds,
@@ -165,7 +172,7 @@ export function createApp() {
       const ids = String(req.query.ids).split(',').map(Number);
       rows = ids.map((id) => rows.find((r) => r.id === id)).filter(Boolean);
     }
-    res.json(buildShortsPack({ kind, rows, count, appName: req.query.app || 'Coffer', cta: req.query.cta || 'coffer.gg' }));
+    res.json(buildShortsPack({ kind, rows, count, appName: req.query.app || config.appName, cta: req.query.cta || config.appUrl }));
   });
 
   app.use('/api', (_req, res) => res.status(404).json({ error: 'not_found' }));
@@ -178,7 +185,7 @@ export async function start() {
   const { app, news } = createApp();
   news.start();
   const server = app.listen(config.port, () => {
-    console.log(`Coffer listening on http://localhost:${config.port} (${config.offline ? 'OFFLINE fixtures' : 'live wiki data'})`);
+    console.log(`${config.appName} listening on http://localhost:${config.port} (${config.offline ? 'OFFLINE fixtures' : 'live wiki data'})`);
     console.log(`Free refresh ${config.freeRefreshSeconds}s · Premium refresh ${config.premiumRefreshSeconds}s · ${config.premiumKeys.length} premium key(s) loaded`);
   });
   return server;

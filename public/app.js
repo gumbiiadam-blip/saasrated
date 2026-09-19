@@ -4,6 +4,7 @@ const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const api = async (path, opts) => {
   const res = await fetch(path, { headers: { 'Content-Type': 'application/json' }, ...opts });
   const body = await res.json().catch(() => ({}));
+  setOffline(res.headers.get('X-From-Cache') === '1' || res.status === 503, body.updatedAt || body.status?.fastUpdatedAt);
   if (!res.ok) throw Object.assign(new Error(body.message || body.error || res.statusText), { status: res.status, body });
   return body;
 };
@@ -19,6 +20,13 @@ const ago = (secs) => (secs === null || secs === undefined ? '—' : secs < 60 ?
 const iconUrl = (icon) => `https://oldschool.runescape.wiki/images/${encodeURIComponent((icon || '').replace(/ /g, '_'))}?format=original`;
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const secsFmt = (s) => (s >= 60 ? `${Math.round(s / 60)} min` : `${s}s`);
+
+function setOffline(off, at) {
+  const b = document.getElementById('offline-banner');
+  if (!b) return;
+  b.hidden = !off;
+  if (off && at) document.getElementById('offline-at').textContent = new Date(at).toLocaleTimeString();
+}
 
 const state = {
   me: null,
@@ -44,6 +52,13 @@ function toast(msg, cls = '') {
 async function loadMe() {
   state.me = await api('/api/me');
   const prem = state.me.tier === 'premium';
+  if (state.me.app) {
+    document.title = `${state.me.app.name} · OSRS Market`;
+    $('#brand-name').textContent = state.me.app.name;
+    $('#brand-tagline').textContent = state.me.app.tagline || 'OSRS market';
+    if (!$('#s-app').dataset.touched) $('#s-app').value = state.me.app.name;
+    if (!$('#s-cta').dataset.touched) $('#s-cta').value = state.me.app.url;
+  }
   document.body.classList.toggle('premium', prem);
   $('#tier-badge').textContent = state.me.tier;
   $('#tier-badge').classList.toggle('premium', prem);
@@ -68,7 +83,8 @@ async function loadMe() {
 function schedule() {
   clearInterval(state.timers.poll);
   const ms = state.me.refreshSeconds * 1000;
-  state.timers.poll = setInterval(refreshActive, ms);
+  // Hidden tabs don't poll. Coming back refreshes immediately if the data is due.
+  state.timers.poll = setInterval(() => { if (!document.hidden) refreshActive(); }, ms);
   clearInterval(state.timers.clock);
   state.timers.clock = setInterval(updateClock, 1000);
 }
@@ -309,7 +325,7 @@ function connectStream() {
     const a = JSON.parse(e.data);
     const msg = `<b>${esc(a.name)}</b> ${a.metric} is ${gp(a.current)} (${a.op} ${gp(a.value)})`;
     toast(`🔔 ${msg}`);
-    if (Notification.permission === 'granted') new Notification(`Coffer: ${a.name}`, { body: `${a.metric} ${a.op} ${gp(a.value)} → now ${gp(a.current)}` });
+    if (Notification.permission === 'granted') new Notification(`${state.me.app?.name || 'GE'}: ${a.name}`, { body: `${a.metric} ${a.op} ${gp(a.value)} → now ${gp(a.current)}` });
     if (state.tab === 'alerts') loadAlerts();
   });
   es.addEventListener('tick', (e) => { state.lastUpdatedAt = JSON.parse(e.data).updatedAt; });
@@ -341,7 +357,7 @@ $('#s-record').addEventListener('click', async () => {
     const blob = await CofferShorts.record($('#s-canvas'), state.pack, $('#s-app').value, (t, total) => ($('#s-status').textContent = `● recording ${t.toFixed(1)}s / ${total}s`));
     const url = URL.createObjectURL(blob);
     const a = $('#s-download'); a.href = url; a.hidden = false;
-    a.download = `coffer-${state.pack.kind}-${new Date().toISOString().slice(0, 10)}.webm`;
+    a.download = `${($('#s-app').value || 'short').toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${state.pack.kind}-${new Date().toISOString().slice(0, 10)}.webm`;
     $('#s-status').textContent = `done · ${(blob.size / 1e6).toFixed(1)} MB`;
     toast('Short recorded. Download it below.');
   } catch (err) { toast(`Recording failed: ${esc(err.message)}`, 'err'); }
@@ -378,5 +394,16 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { $('#draw
 // Hide item icons the wiki refuses to serve (offline, blocked, renamed) instead of showing a broken image.
 document.addEventListener('error', (e) => { if (e.target && e.target.tagName === 'IMG') e.target.style.visibility = 'hidden'; }, true);
 
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && state.me && Date.now() - state.lastFetch > state.me.refreshSeconds * 1000) refreshActive();
+});
+window.addEventListener('online', () => { setOffline(false); refreshActive(); });
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
+  // First visit: the worker takes over after the page has loaded, so refetch once so it has data to keep.
+  navigator.serviceWorker.addEventListener('controllerchange', () => { if (state.me) { refreshActive(); loadMe(); } });
+}
+$$('#s-app, #s-cta').forEach((el) => el.addEventListener('input', () => (el.dataset.touched = '1')));
+
 /* ---------- boot ---------- */
-loadMe().then(() => showTab('flips')).catch((err) => toast(`Cannot reach Coffer API: ${esc(err.message)}`, 'err'));
+loadMe().then(() => showTab('flips')).catch((err) => toast(`Cannot reach the API: ${esc(err.message)}`, 'err'));

@@ -1,4 +1,5 @@
 import { wiki } from './wikiClient.js';
+import { config } from './config.js';
 
 /**
  * Official OSRS news, pulled from Jagex's RSS feed and cross-referenced against
@@ -67,7 +68,7 @@ export class NewsStore {
 
   async refresh() {
     try {
-      const xml = await wiki.newsRss();
+      const { data: xml } = await wiki.newsRss();
       const parsed = parseRss(xml);
       this.posts = parsed.map((p) => ({
         ...p,
@@ -81,7 +82,7 @@ export class NewsStore {
 
   start() {
     this.refresh();
-    this.timer = setInterval(() => this.refresh(), 15 * 60_000).unref();
+    this.timer = setInterval(() => this.refresh(), config.newsRefreshMinutes * 60_000).unref();
   }
 
   stop() {

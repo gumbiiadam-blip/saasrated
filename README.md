@@ -1,6 +1,6 @@
-# Coffer
+# GEandChill
 
-A standalone Old School RuneScape market app. Live Grand Exchange flips, dump and spike detection, official news cross-referenced with prices, alerts, and a Shorts Studio that turns the market into 9:16 video with a call to action.
+Codename Coffer (that's why the env vars say `COFFER_`). A standalone Old School RuneScape market app. Live Grand Exchange flips, dump and spike detection, official news cross-referenced with prices, alerts, and a Shorts Studio that turns the market into 9:16 video with a call to action.
 
 No framework, no build step. Node 20+, one dependency (Express), vanilla front end.
 
@@ -13,6 +13,17 @@ npm start                    # http://localhost:3000
 ```
 
 Set `COFFER_USER_AGENT` to something that identifies you. The OSRS Wiki asks for it and will block anonymous clients.
+
+Brand is config: `APP_NAME`, `APP_TAGLINE`, `APP_URL` drive the header, the Shorts frames and the CTA. Rename without touching code.
+
+## Offline first, light on the wiki
+
+- Every upstream response is written to `data/runtime/cache/`. On boot the app serves the last known data instantly and refreshes in the background. If the wiki is down or you have no connection, it keeps serving the cached copy and the UI shows an offline banner with the timestamp.
+- The server polls only while someone is using the app (`COFFER_IDLE_AFTER_SECONDS`, default 10 min), and only at the cadence of the highest active tier. Free-only traffic never triggers the 30s poll. An idle server makes zero requests.
+- The 5m and 1h endpoints are fetched once per 5-minute bucket (1h every third bucket), not on every tick. The item list is refreshed weekly, news every 30 min, timeseries cached per step.
+- The client is an installable PWA. A service worker caches the app shell and the last API answers, so it opens and shows the last prices with no server at all. Hidden tabs stop polling.
+
+Worst case for the wiki with one premium user glued to the tab: one `latest` call every 30s plus one 5m call every 5 min and one 1h call every 15 min.
 
 Need it to run without internet (tests, demos):
 

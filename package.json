@@ -1,7 +1,7 @@
 {
-  "name": "coffer",
+  "name": "geandchill",
   "version": "0.1.0",
-  "description": "Coffer: a standalone Old School RuneScape Grand Exchange market app. Flips, dumps, news impact and YouTube Shorts output.",
+  "description": "GEandChill (codename Coffer): a standalone Old School RuneScape Grand Exchange market app. Flips, dumps, news impact and YouTube Shorts output.",
   "type": "module",
   "main": "server/index.js",
   "engines": { "node": ">=20" },

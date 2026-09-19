@@ -9,6 +9,11 @@ const num = (v, d) => (v === undefined || v === '' || Number.isNaN(Number(v)) ? 
 export const config = {
   root,
   port: num(process.env.PORT, 3000),
+  appName: process.env.APP_NAME || 'GEandChill',
+  appTagline: process.env.APP_TAGLINE || 'OSRS market, minus the sweat',
+  appUrl: process.env.APP_URL || 'geandchill.com',
+  idleAfterSeconds: num(process.env.COFFER_IDLE_AFTER_SECONDS, 600),
+  newsRefreshMinutes: num(process.env.COFFER_NEWS_REFRESH_MINUTES, 30),
   offline: process.env.COFFER_OFFLINE === '1',
   userAgent: process.env.COFFER_USER_AGENT || 'coffer/0.1 (standalone OSRS market app; set COFFER_USER_AGENT)',
   premiumKeys: (process.env.COFFER_PREMIUM_KEYS || '')
