@@ -1,5 +1,6 @@
 import express from 'express';
 import path from 'node:path';
+import os from 'node:os';
 import { config } from './config.js';
 import { market } from './marketStore.js';
 import { buildFlips, sortFlips, filterFlips } from './flips.js';
@@ -187,6 +188,8 @@ export async function start() {
   const server = app.listen(config.port, () => {
     console.log(`${config.appName} listening on http://localhost:${config.port} (${config.offline ? 'OFFLINE fixtures' : 'live wiki data'})`);
     console.log(`Free refresh ${config.freeRefreshSeconds}s · Premium refresh ${config.premiumRefreshSeconds}s · ${config.premiumKeys.length} premium key(s) loaded`);
+    const lan = Object.values(os.networkInterfaces()).flat().filter((i) => i && i.family === 'IPv4' && !i.internal).map((i) => i.address);
+    if (lan.length) console.log(`On your phone (same Wi-Fi): ${lan.map((ip) => `http://${ip}:${config.port}`).join('  or  ')}`);
   });
   return server;
 }

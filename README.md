@@ -33,6 +33,14 @@ npm run offline              # serves the fixtures instead of the wiki
 npm test
 ```
 
+## On your phone
+
+A phone can't run Node, so the server runs elsewhere and the phone opens it. Either:
+
+**Same Wi-Fi.** Run `npm start` on your PC or laptop. The startup log prints `On your phone: http://192.168.x.x:3000`. Open that on the phone, then "Add to Home Screen" (Safari share menu, or Chrome's ⋮ menu). It installs as an app with the service worker, so it still opens and shows the last prices when the laptop is off. Windows may ask to allow Node through the firewall the first time.
+
+**Anywhere.** Push the repo to GitHub and click "New → Blueprint" on [Render](https://render.com) pointing at it; `render.yaml` does the rest. Set `COFFER_USER_AGENT` in the dashboard, copy the generated `COFFER_PREMIUM_KEYS` value, open the URL on your phone, Add to Home Screen, paste the key into Upgrade. Free tier sleeps after 15 idle minutes and wakes on the next request, which the PWA covers by showing cached prices in the meantime.
+
 Docker:
 
 ```bash

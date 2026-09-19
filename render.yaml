@@ -1,0 +1,20 @@
+# One-click deploy on Render (free tier works; it sleeps after 15 min idle and wakes on the next hit).
+services:
+  - type: web
+    name: geandchill
+    runtime: node
+    plan: free
+    buildCommand: npm ci --omit=dev
+    startCommand: npm start
+    healthCheckPath: /api/me
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: APP_NAME
+        value: GEandChill
+      - key: APP_URL
+        value: geandchill.com
+      - key: COFFER_USER_AGENT
+        sync: false   # set in the dashboard: "geandchill/0.1 (contact: you@example.com)"
+      - key: COFFER_PREMIUM_KEYS
+        generateValue: true   # Render generates a random key; read it in the dashboard and paste it into the Upgrade dialog
