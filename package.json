@@ -1,0 +1,19 @@
+{
+  "name": "coffer",
+  "version": "0.1.0",
+  "description": "Coffer: a standalone Old School RuneScape Grand Exchange market app. Flips, dumps, news impact and YouTube Shorts output.",
+  "type": "module",
+  "main": "server/index.js",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js",
+    "offline": "COFFER_OFFLINE=1 node server/index.js",
+    "fixtures": "node scripts/make-fixtures.js",
+    "test": "COFFER_OFFLINE=1 node --test test/*.test.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  },
+  "license": "MIT"
+}

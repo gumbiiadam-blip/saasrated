@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Coffer · OSRS Market</title>
+<meta name="description" content="Coffer: live Grand Exchange flips, dump detection, news impact and Shorts output for Old School RuneScape.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%231a1610'/><text x='50' y='68' font-size='58' text-anchor='middle' fill='%23e3b341'>C</text></svg>">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand"><span class="coin">C</span><span>Coffer</span><small>OSRS market</small></div>
+  <nav class="tabs" id="tabs">
+    <button data-tab="flips" class="active">Flips</button>
+    <button data-tab="moves">Dumps &amp; Spikes <span class="pill" id="moves-count"></span></button>
+    <button data-tab="news">News</button>
+    <button data-tab="watch">Watchlist</button>
+    <button data-tab="alerts">Alerts</button>
+    <button data-tab="shorts">Shorts Studio</button>
+  </nav>
+  <div class="status">
+    <span class="tier" id="tier-badge">free</span>
+    <span class="refresh" id="refresh-status" title="How old the prices you see are">…</span>
+    <button class="btn small" id="upgrade-btn">Upgrade</button>
+  </div>
+</header>
+
+<div class="banner" id="free-banner" hidden>
+  You're on <b>Free</b>: prices refresh every <b id="banner-free"></b>. Premium refreshes every <b id="banner-prem"></b>, unlocks volume, dumps, alerts, charts and the Shorts Studio.
+  <button class="btn tiny" data-open="upgrade">Get the edge</button>
+</div>
+
+<main>
+  <!-- FLIPS -->
+  <section class="tab" id="tab-flips">
+    <div class="toolbar">
+      <input id="f-search" placeholder="Search item…">
+      <label>Min margin <input id="f-margin" type="number" placeholder="0" min="0"></label>
+      <label>Min ROI % <input id="f-roi" type="number" placeholder="0" min="0" step="0.1"></label>
+      <label>Max buy <input id="f-maxbuy" type="number" placeholder="∞" min="0"></label>
+      <label class="prem-only">Min vol/hr <input id="f-vol" type="number" placeholder="0" min="0"></label>
+      <label class="chk"><input id="f-f2p" type="checkbox"> F2P only</label>
+      <label class="chk"><input id="f-stale" type="checkbox" checked> Hide stale</label>
+      <span class="spacer"></span>
+      <span class="muted" id="flips-meta"></span>
+    </div>
+    <div class="table-wrap">
+      <table id="flips-table">
+        <thead><tr>
+          <th data-sort="name">Item</th>
+          <th data-sort="buy" class="num">Buy</th>
+          <th data-sort="sell" class="num">Sell</th>
+          <th class="num">Tax</th>
+          <th data-sort="margin" class="num">Margin</th>
+          <th data-sort="roi" class="num">ROI</th>
+          <th class="num">Limit</th>
+          <th data-sort="hourlyVolume" class="num prem-col">Vol/hr</th>
+          <th data-sort="potential" class="num prem-col">Per limit</th>
+          <th class="num">Age</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <p class="muted foot" id="flips-foot"></p>
+  </section>
+
+  <!-- MOVES -->
+  <section class="tab" id="tab-moves" hidden>
+    <div class="toolbar">
+      <label>Min move % <input id="m-pct" type="number" value="4" min="1" step="0.5"></label>
+      <label>Volume × <input id="m-vol" type="number" value="2" min="1" step="0.5"></label>
+      <label>Min price <input id="m-minprice" type="number" value="500" min="1"></label>
+      <span class="spacer"></span>
+      <span class="muted" id="moves-meta"></span>
+    </div>
+    <div id="moves-locked" class="locked" hidden>
+      <h3>The dump detector is premium.</h3>
+      <p id="moves-teaser"></p>
+      <p>Dumps are where you buy. Spikes are where you sell. Free users find out five minutes after everyone else, which in flipping terms is called "being the exit liquidity".</p>
+      <button class="btn" data-open="upgrade">Unlock dumps &amp; spikes</button>
+    </div>
+    <div class="two-col" id="moves-cols">
+      <div><h3>Dumps <small class="muted">price cratering, sellers flooding</small></h3><div id="dumps-list" class="cards"></div></div>
+      <div><h3>Spikes <small class="muted">price ripping, buyers flooding</small></h3><div id="spikes-list" class="cards"></div></div>
+    </div>
+  </section>
+
+  <!-- NEWS -->
+  <section class="tab" id="tab-news" hidden>
+    <p class="muted">Official OSRS news, cross-referenced with the item list. Each chip shows what that item's price has done vs its 1h average. Items mentioned in the last 14 days get a 📰 badge in the Flips and Dumps tables so you can tell a news dump from a random one.</p>
+    <div id="news-list" class="news"></div>
+  </section>
+
+  <!-- WATCHLIST -->
+  <section class="tab" id="tab-watch" hidden>
+    <p class="muted">Click the ☆ next to any item to watch it. Stored in this browser. <span class="prem-only">Premium: unlimited.</span> <span class="free-only">Free: 5 items.</span></p>
+    <div class="table-wrap"><table id="watch-table"><thead><tr><th>Item</th><th class="num">Buy</th><th class="num">Sell</th><th class="num">Margin</th><th class="num">ROI</th><th class="num prem-col">Vol/hr</th><th></th></tr></thead><tbody></tbody></table></div>
+  </section>
+
+  <!-- ALERTS -->
+  <section class="tab" id="tab-alerts" hidden>
+    <div id="alerts-locked" class="locked" hidden>
+      <h3>Alerts are premium.</h3>
+      <p>Get pinged the moment a buy price drops below your number or a margin opens up, checked every 30 seconds, delivered live to this tab and as a browser notification.</p>
+      <button class="btn" data-open="upgrade">Unlock alerts</button>
+    </div>
+    <div id="alerts-body">
+      <form id="alert-form" class="toolbar">
+        <input id="a-item" placeholder="Item name" list="item-list" autocomplete="off" required>
+        <datalist id="item-list"></datalist>
+        <select id="a-metric"><option value="low">Buy price (low)</option><option value="high">Sell price (high)</option><option value="margin">Margin after tax</option></select>
+        <select id="a-op"><option value="<=">≤</option><option value=">=">≥</option></select>
+        <input id="a-value" type="number" placeholder="gp" required>
+        <button class="btn" type="submit">Add alert</button>
+        <button class="btn small" type="button" id="notif-btn">Enable browser notifications</button>
+      </form>
+      <div class="two-col">
+        <div><h3>Active</h3><div id="alerts-list" class="cards"></div></div>
+        <div><h3>Recently fired</h3><div id="alerts-fired" class="cards"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SHORTS -->
+  <section class="tab" id="tab-shorts" hidden>
+    <div id="shorts-locked" class="locked" hidden>
+      <h3>Shorts Studio is premium.</h3>
+      <p>Turn the live market into a 9:16 video with hook, countdown, captions and a CTA that sends viewers to your app. Records in the browser, no editing software.</p>
+      <button class="btn" data-open="upgrade">Unlock Shorts Studio</button>
+    </div>
+    <div id="shorts-body" class="studio">
+      <div class="studio-controls">
+        <div class="toolbar">
+          <label>Content <select id="s-kind"><option value="flips">Top flips right now</option><option value="dumps">Dumps happening now</option><option value="spikes">Spikes happening now</option></select></label>
+          <label>Items <input id="s-count" type="number" value="5" min="3" max="8"></label>
+          <label>App name <input id="s-app" value="Coffer"></label>
+          <label>CTA <input id="s-cta" value="coffer.gg"></label>
+          <button class="btn" id="s-generate">Generate pack</button>
+        </div>
+        <div class="toolbar">
+          <button class="btn" id="s-play">▶ Preview</button>
+          <button class="btn primary" id="s-record">● Record WebM</button>
+          <a id="s-download" class="btn small" hidden download="coffer-short.webm">⬇ Download</a>
+          <span class="muted" id="s-status"></span>
+        </div>
+        <h3>Title <button class="btn tiny copy" data-copy="s-title">copy</button></h3>
+        <textarea id="s-title" rows="2"></textarea>
+        <h3>Description <button class="btn tiny copy" data-copy="s-desc">copy</button></h3>
+        <textarea id="s-desc" rows="8"></textarea>
+        <h3>Hashtags <button class="btn tiny copy" data-copy="s-tags">copy</button></h3>
+        <textarea id="s-tags" rows="2"></textarea>
+        <h3>Voiceover script <button class="btn tiny copy" data-copy="s-vo">copy</button></h3>
+        <textarea id="s-vo" rows="8"></textarea>
+        <p class="muted">Tip: paste the voiceover into any TTS (or read it yourself), drop it under the WebM in CapCut/YouTube's editor, and post. Convert WebM to MP4 with <code>ffmpeg -i coffer-short.webm -c:v libx264 -pix_fmt yuv420p short.mp4</code> if a platform is fussy.</p>
+      </div>
+      <div class="studio-preview"><canvas id="s-canvas" width="1080" height="1920"></canvas></div>
+    </div>
+  </section>
+</main>
+
+<!-- ITEM DRAWER -->
+<aside class="drawer" id="drawer" hidden>
+  <button class="close" id="drawer-close">×</button>
+  <div id="drawer-body"></div>
+</aside>
+
+<!-- UPGRADE MODAL -->
+<div class="modal" id="upgrade-modal" hidden>
+  <div class="modal-box">
+    <button class="close" data-close="upgrade">×</button>
+    <h2>Get the edge</h2>
+    <table class="compare">
+      <tr><th></th><th>Free</th><th>Premium</th></tr>
+      <tr><td>Price refresh</td><td id="cmp-free"></td><td id="cmp-prem"><b>10× faster</b></td></tr>
+      <tr><td>Flip table</td><td>Top 25</td><td>Everything</td></tr>
+      <tr><td>Volume &amp; per-limit profit</td><td>—</td><td>✓</td></tr>
+      <tr><td>Dump &amp; spike detector</td><td>Count only</td><td>✓ with news cause</td></tr>
+      <tr><td>Price charts</td><td>—</td><td>✓</td></tr>
+      <tr><td>Alerts (live + push)</td><td>—</td><td>✓</td></tr>
+      <tr><td>Watchlist</td><td>5 items</td><td>Unlimited</td></tr>
+      <tr><td>Shorts Studio</td><td>—</td><td>✓</td></tr>
+    </table>
+    <form id="upgrade-form">
+      <input id="upgrade-key" placeholder="Premium key" autocomplete="off">
+      <button class="btn primary" type="submit">Activate</button>
+    </form>
+    <p class="muted" id="upgrade-msg">Keys are set by the operator in <code>COFFER_PREMIUM_KEYS</code>. Payment plumbing (Stripe) plugs in here.</p>
+    <button class="btn small" id="logout-btn" hidden>Drop back to free</button>
+  </div>
+</div>
+
+<div id="toasts"></div>
+<script src="/shorts.js"></script>
+<script src="/app.js"></script>
+</body>
+</html>
